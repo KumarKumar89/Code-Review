@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Studio Code · UI Explained (W×H)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            color: #212529;
+            line-height: 1.6;
+            padding: 2rem 1.5rem;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+            padding: 2.5rem 2rem;
+        }
+
+        h1 {
+            font-weight: 600;
+            font-size: 2.4rem;
+            color: #007acc;
+            margin-bottom: 0.25rem;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: #5c6b7a;
+            margin-bottom: 2.5rem;
+            border-left: 4px solid #007acc;
+            padding-left: 1rem;
+        }
+
+        .ui-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            margin-top: 1.8rem;
+        }
+
+        .ui-card {
+            display: flex;
+            flex-wrap: wrap;
+            background: #fcfdff;
+            border: 1px solid #e9edf4;
+            border-radius: 20px;
+            padding: 1.6rem;
+            gap: 2rem;
+            transition: 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+        }
+
+        .ui-card:hover {
+            border-color: #bdd3f0;
+            box-shadow: 0 8px 18px rgba(0, 122, 204, 0.06);
+        }
+
+        .description {
+            flex: 1 1 280px;
+        }
+
+        .description h2 {
+            font-weight: 600;
+            font-size: 1.7rem;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .description h2 .icon {
+            font-size: 1.5rem;
+        }
+
+        .description p {
+            color: #495057;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+
+        .key-detail {
+            background: #f1f6fd;
+            border-radius: 12px;
+            padding: 0.8rem 1rem;
+            font-size: 0.95rem;
+            color: #1e3b5c;
+            margin-top: 0.8rem;
+            display: inline-block;
+        }
+
+        .screenshot-placeholder {
+            flex: 0 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #ffffff;
+            border: 2px dashed #cdd9e9;
+            border-radius: 18px;
+            background: linear-gradient(145deg, #f5f9ff 0%, #f0f4fc 100%);
+            box-shadow: inset 0 1px 4px rgba(0,0,0,0.02);
+            position: relative;
+            min-width: 140px;
+        }
+
+        .screenshot-placeholder .dim-label {
+            font-weight: 600;
+            font-size: 1rem;
+            color: #2a4b6e;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 0.3rem 1rem;
+            border-radius: 20px;
+            margin-top: 0.5rem;
+            letter-spacing: 0.3px;
+            backdrop-filter: blur(2px);
+        }
+
+        .screenshot-placeholder .element-name {
+            font-weight: 500;
+            font-size: 1rem;
+            color: #2c3e50;
+            text-align: center;
+            padding: 0 0.5rem;
+        }
+
+        /* specific placeholder sizes */
+        .placeholder-activity {
+            width: 48px;
+            height: 600px;
+        }
+
+        .placeholder-sidebar {
+            width: 280px;
+            height: 400px;
+        }
+
+        .placeholder-editor {
+            width: 600px;
+            height: 380px;
+        }
+
+        .placeholder-panel {
+            width: 700px;
+            height: 160px;
+        }
+
+        .placeholder-statusbar {
+            width: 750px;
+            height: 28px;
+        }
+
+        .placeholder-tabs {
+            width: 600px;
+            height: 40px;
+        }
+
+        .placeholder-minimap {
+            width: 60px;
+            height: 380px;
+        }
+
+        .placeholder-breadcrumbs {
+            width: 500px;
+            height: 28px;
+        }
+
+        .footer-note {
+            margin-top: 3rem;
+            text-align: center;
+            color: #6c757d;
+            font-size: 0.9rem;
+            border-top: 1px solid #e9ecef;
+            padding-top: 1.5rem;
+        }
+
+        @media (max-width: 700px) {
+            .ui-card {
+                flex-direction: column;
+            }
+            .screenshot-placeholder {
+                width: 100% !important;
+                height: auto !important;
+                min-height: 100px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖥️ Visual Studio Code UI</h1>
+        <div class="subtitle">
+            A guided tour of the interface — each element shown with its typical <strong>width × height</strong> (pixels).
+        </div>
+
+        <div class="ui-grid">
+            <!-- Activity Bar -->
+            <div class="ui-card">
+                <div class="description">
+                    <h2><span class="icon">📌</span> Activity Bar</h2>
+                    <p>
+                        The narrow vertical strip on the far left. It lets you switch between views like 
+                        Explorer, Search, Source Control, Run &amp; Debug, and Extensions. 
+                        Icons are stacked vertically.
+                    </p>
+                    <div class="key-detail">
+                        ⚡ Keyboard: <strong>Ctrl+Shift+E</strong> (Explorer) / <strong>Ctrl+Shift+X</strong> (Extensions)
+                    </div>
+                </div>
+                <div class="screenshot-placeholder placeholder-activity">
+                    <span class="element-name">Activity Bar</span>
+                    <span class="dim-label">48 × 600</span>
+                </div>
+            </div>
+
+            <!-- Side Bar (Primary Sidebar) -->
+            <div class="ui-card">
+                <div class="description">
+                    <h2><span class="icon">🗂️</span> Side Bar</h2>
+                    <p>
+                        The main side panel that appears to the right of the Activity Bar. It contains 
+                        the Explorer, file tree, outline, or whichever view is selected. 
+                        You can resize it horizontally.
+                    </p>
+                    <div class="key-detail">
+                        🔍 Toggle with <strong>Ctrl+B</strong> · Typical width ~280px
+                    </div>
+                </div>
+                <div class="screenshot-placeholder placeholder-sidebar">
+                    <span class="element-name">Side Bar</span>
+                    <span class="dim-label">280 × 400</span>
+                </div>
+            </div>
+
+            <!-- Editor Area (with tabs) -->
+            <div class="ui-card">
+                <div class="description">
+                    <h2><span class="icon">📝</span> Editor Area</h2>
+                    <p>
+                        The central region where you write code. It can be split into multiple groups 
+                        and contains tabs for open files. The editor occupies the largest portion of the window.
+                    </p>
+                    <div class="key-detail">
+                        📄 Split editor: <strong>Ctrl+\</strong> · Close tab: <strong>Ctrl+W</strong>
+                    </div>
+                </div>
+                <div class="screenshot-placeholder placeholder-editor">
+                    <span class="element-name">Editor</span>
+                    <span class="dim-label">600 × 380</span>
+                </div>
+            </div>
+
+            <!-- Tabs (editor tabs) -->
+            <div class="ui-card">
+                <div class="description">
+                    <h2><span class="icon">📑</span> Editor Tabs</h2>
+                    <p>
+                        Located at the top of the editor area. Each open file is represented by a tab. 
+                        You can drag tabs to reorder or split the editor.
+                    </p>
+                    <div class="key-detail">
+                        🖱️ Right-click a tab for close/split options
+                    </div>
+                </div>
+                <div class="screenshot-placeholder placeholder-tabs">
+                    <span class="element-name">Tabs</span>
+                    <span class="dim-label">600 × 40</span>
+                </div>
+            </div>
+
+            <!-- Breadcrumbs -->
+            <div class="ui-card">
+                <div class="description">
+                    <h2><span class="icon">🧭</span> Breadcrumbs</h2>
+                    <p>
+                        A navigation bar showing the file path and symbol hierarchy 
+                        (classes, functions, etc.). It appears just above the editor content.
+                    </p>
+                    <div class="key-detail">
+                        🧩 Toggle with <strong>Ctrl+Shift+.</strong>
+                    </div>
+                </div>
+                <div class="screenshot-placeholder placeholder-breadcrumbs">
+                    <span class="element-name">Breadcrumbs</span>
+                    <span class="dim-label">500 × 28</span>
+                </div>
+            </div>
+
+            <!-- Minimap -->
+            <div class="ui-card">
+                <div class="description">
+                    <h2><span class="icon">🗺️</span> Minimap</h2>
+                    <p>
+                        A miniature overview of the entire file, displayed on the right side of the editor. 
+                        Click or drag to scroll quickly through the code.
+                    </p>
+                    <div class="key-detail">
+                        🎚️ Enable/disable in View menu or settings
+                    </div>
+                </div>
+                <div class="screenshot-placeholder placeholder-minimap">
+                    <span class="element-name">Minimap</span>
+                    <span class="dim-label">60 × 380</span>
+                </div>
+            </div>
+
+            <!-- Panel (bottom) -->
+            <div class="ui-card">
+                <div class="description">
+                    <h2><span class="icon">📋</span> Panel</h2>
+                    <p>
+                        The resizable area at the bottom. It hosts the Terminal, Output, Problems, 
+                        Debug Console, and more. You can drag it to resize or move it to the side.
+                    </p>
+                    <div class="key-detail">
+                        ⌨️ Toggle Panel: <strong>Ctrl+J</strong>
+                    </div>
+                </div>
+                <div class="screenshot-placeholder placeholder-panel">
+                    <span class="element-name">Panel</span>
+                    <span class="dim-label">700 × 160</span>
+                </div>
+            </div>
+
+            <!-- Status Bar -->
+            <div class="ui-card">
+                <div class="description">
+                    <h2><span class="icon">📊</span> Status Bar</h2>
+                    <p>
+                        The thin bar at the very bottom. It shows information like line/column number, 
+                        encoding, language mode, Git branch, and notifications.
+                    </p>
+                    <div class="key-detail">
+                        🔵 Click items (e.g., language mode) to change settings quickly
+                    </div>
+                </div>
+                <div class="screenshot-placeholder placeholder-statusbar">
+                    <span class="element-name">Status Bar</span>
+                    <span class="dim-label">750 × 28</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-note">
+            🧩 Dimensions are approximate and represent typical layout in a 1440×900 window. <br>
+            VS Code is highly customizable — you can move panels, hide elements, and adjust sizes to your workflow.
+        </div>
+    </div>
+</body>
+</html>
