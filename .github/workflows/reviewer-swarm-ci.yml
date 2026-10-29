@@ -52,4 +52,4 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       - name: Compile Rust scanner
-        run: cargo check --manifest-path multimodal-code-reviewer-swarm/rust-scanner/Cargo.toml --locked
+        run: cargo check --manifest-path multimodal-code-reviewer-swarm/rust-scanner/Cargo.toml
