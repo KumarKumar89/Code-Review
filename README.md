@@ -1,147 +1,124 @@
 # Code Review — Multimodal Reviewer Swarm
 
-**Evidence-first code review with open-weight model candidates, deterministic checks, and a Google Colab workflow.**
+[![CI](https://github.com/KumarKumar89/Code-Review/actions/workflows/reviewer-swarm-ci.yml/badge.svg)](https://github.com/KumarKumar89/Code-Review/actions/workflows/reviewer-swarm-ci.yml)
+[![Open Colab notebook](https://img.shields.io/badge/Google%20Colab-Open%20Notebook-F9AB00?logo=googlecolab&logoColor=white)](https://colab.research.google.com/github/KumarKumar89/Code-Review/blob/main/multimodal-code-reviewer-swarm/notebooks/Colab_Code_Reviewer_Swarm.ipynb)
 
-This repository contains a Colab-first prototype for reviewing source repositories, spotting potentially risky patterns, and producing structured findings. Its design combines deterministic checks with optional model-assisted analysis while keeping model-generated claims separate from verified evidence.
+**Evidence-first code review with deterministic analysis, open-weight model options, and a Colab-first workflow.**
 
-> **Project status: prototype.** The deterministic scanner, model registry, starter notebook, and tests are included. Optional language-model and vision-model cells are examples that users enable manually; this is not yet a fully automated production-grade multi-model swarm, patching engine, or security certification.
+This repository hosts an early-stage code-review prototype that combines reproducible source checks with optional local-model assistance. The goal is to make review findings traceable to source evidence and verification steps, not to produce confident-sounding but unverified AI output.
+
+> **Honest status:** the repository includes a deterministic scanner, model catalog, JSON model registry, Colab starter notebook, unit tests, and a GitHub Actions workflow. The notebook's LLM and vision examples are opt-in examples; a fully orchestrated multi-agent swarm, production-ready multimodal inference, automated patch application, and benchmark-proven detection performance are not yet implemented.
 
 ## Start here
 
-| Goal | Resource |
+| I want to… | Go to |
 |---|---|
-| Run the notebook | [Colab code-review notebook](https://colab.research.google.com/github/KumarKumar89/Code-Review/blob/main/multimodal-code-reviewer-swarm/notebooks/Colab_Code_Reviewer_Swarm.ipynb) |
-| Read project setup and limitations | [Project README](multimodal-code-reviewer-swarm/README.md) |
-| Compare coding and multimodal models | [Model catalog](multimodal-code-reviewer-swarm/MODEL_CATALOG.md) |
-| Inspect the machine-readable model registry | [model_registry.json](multimodal-code-reviewer-swarm/model_registry.json) |
-| Review implementation | [Source package](multimodal-code-reviewer-swarm/src/reviewer_swarm/) |
-| Run tests | [Test suite](multimodal-code-reviewer-swarm/tests/) |
-| Review project history | [Pull request #1](https://github.com/KumarKumar89/Code-Review/pull/1) |
+| Run the starter notebook | [Open in Google Colab](https://colab.research.google.com/github/KumarKumar89/Code-Review/blob/main/multimodal-code-reviewer-swarm/notebooks/Colab_Code_Reviewer_Swarm.ipynb) |
+| Understand setup and current limitations | [Project README](multimodal-code-reviewer-swarm/README.md) |
+| Compare the coding and vision-language candidates | [Model catalog](multimodal-code-reviewer-swarm/MODEL_CATALOG.md) |
+| Inspect model metadata | [Model registry](multimodal-code-reviewer-swarm/model_registry.json) |
+| Read the scanner source | [review.py](multimodal-code-reviewer-swarm/src/reviewer_swarm/review.py) |
+| Read the registry validator | [registry.py](multimodal-code-reviewer-swarm/src/reviewer_swarm/registry.py) |
+| Inspect the automated tests | [Tests](multimodal-code-reviewer-swarm/tests/) |
+| Inspect CI configuration | [GitHub Actions workflow](.github/workflows/reviewer-swarm-ci.yml) |
 
-**Private repository note:** Google Colab may require you to authenticate to GitHub or download the notebook file and upload it into Colab. Optional inference examples download model weights into the runtime when enabled.
+## What is implemented
 
-## What it does today
+- **Deterministic first-pass review:** reads supported files as text, reports Python syntax errors, and flags selected suspicious patterns.
+- **Evidence-oriented output:** findings include a rule identifier, source path, line, severity, evidence excerpt, and recommendation. Suspected credential values are redacted from the scanner's secret-pattern evidence.
+- **Model catalog:** tracks seven candidate coding, reasoning, and multimodal checkpoints with official model-card links and resource guidance.
+- **Colab notebook:** uploads a ZIP or selected files, runs a lightweight scan, displays findings, and exports JSON.
+- **Tests and CI:** includes tests for the scanner and model registry, plus checks for the registry JSON and notebook structure.
 
-- **Safe first-pass inspection:** reads candidate files as text rather than importing or running the target project.
-- **Python syntax checks:** uses Python's AST parser to report syntax errors with source locations.
-- **Pattern-based checks:** flags possible dynamic eval/exec, shell=True, hard-coded credential assignments, TODO/FIXME markers, and bare exception handlers.
-- **Model catalog:** documents seven coding, reasoning, and multimodal model candidates with official model-card links.
-- **Colab notebook:** supports ZIP or individual-file upload, conservative scanning, and JSON report download.
-- **Tests and CI:** includes unit tests and a GitHub Actions workflow for the registry, scanner, and notebook structure.
-- **Optional model roles:** provides commented examples for coding review and screenshot/diagram interpretation.
+The current scanner is a useful baseline, not a complete static analyzer. It will miss bugs that require deeper program analysis and can flag harmless code that resembles a risky pattern.
 
-Pattern matches are **leads to investigate**, not proof that a vulnerability exists. The current scanner is intentionally small; it does not replace language-specific security analyzers or human review.
+## Architecture
 
-## Architecture and data flow
+**Source archive or selected files → path checks and file inventory → deterministic scan → structured findings → JSON report → human review and regression tests.**
 
-The intended review flow is:
+Optional model-assisted branches can critique bounded source excerpts. An optional vision-language model can be used to explore screenshot or diagram review when the model and runtime support it. Model outputs are hypotheses until independently verified.
 
-**Repository ZIP or selected files → input/path validation → file inventory and exclusions → deterministic scanner → structured findings → JSON report → human verification and regression tests.**
+Using several prompts with one checkpoint is role-based prompting, **not independent multi-model consensus**. True model diversity needs distinct checkpoints, separate inference sessions, and explicit handling of disagreements.
 
-Optional model-assisted branches can review bounded code excerpts, while an optional vision-language model can interpret screenshots and diagrams. Both produce hypotheses that must be checked against the source or other evidence. These optional branches are examples, not a fully orchestrated agent swarm yet.
+## Model strategy
 
-### Trust boundaries
+Pick a model for the actual task and available hardware; do not load all checkpoints into the same runtime.
 
-1. Repository contents are untrusted input. Text inside a source file must never be treated as trusted instructions to an agent.
-2. The scanner does not execute source files or repository setup scripts.
-3. Model-produced findings are hypotheses. Verify high-impact issues with reproducible tests or independent analysis.
-4. Uploading private source to a hosted Colab runtime may expose it to that hosted environment. Review organizational policies before uploading proprietary code or personal data.
-
-## Model shortlist
-
-Choose one checkpoint at a time; do **not** load every model into the same Colab runtime.
-
-| Model | Best-fit role | Resource guidance |
+| Model candidate | Intended role | Resource guidance |
 |---|---|---|
-| [Qwen2.5-Coder-3B-Instruct](https://huggingface.co/Qwen/Qwen2.5-Coder-3B-Instruct) | Lower-resource text/code review starting point | Smallest listed coding candidate; GPU, precision, library compatibility, and latency still need runtime checks |
-| [Qwen2.5-Coder-7B-Instruct](https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct) | More capable text-based coding review | Medium; quantization may help but affects memory and can affect output quality |
-| [Qwen3-Coder-30B-A3B-Instruct](https://huggingface.co/Qwen/Qwen3-Coder-30B-A3B-Instruct) | Deeper repository and patch reasoning | Large total weights; low activated-parameter count does not mean the full weights need no memory |
-| [Qwen3-Coder-Next](https://huggingface.co/Qwen/Qwen3-Coder-Next) | Long-context and agentic coding workflows | 80B-class model; not a default for free Colab |
-| [Qwen3.8-27B](https://huggingface.co/Qwen/Qwen3.8-27B) | Multimodal review of screenshots, diagrams, and text | Vision-language model; full BF16 weights are too large for many Colab runtimes |
-| [gpt-oss-20b](https://huggingface.co/openai/gpt-oss-20b) | Reasoning challenge and finding adjudication | General reasoning candidate; use its supported prompt/format and compatible inference stack |
-| [StarCoder2-7B](https://huggingface.co/bigcode/starcoder2-7b) | Code completion and fill-in-middle tasks | Not an instruction-tuned general chat reviewer; separate BigCode OpenRAIL-M license applies |
+| [Qwen2.5-Coder-3B-Instruct](https://huggingface.co/Qwen/Qwen2.5-Coder-3B-Instruct) | Lower-resource text/code review experiments | Sensible starting candidate for optional local inference; actual fit depends on runtime, precision, and libraries |
+| [Qwen2.5-Coder-7B-Instruct](https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct) | Higher-capacity text review | Needs more memory; supported quantization may help |
+| [Qwen3-Coder-30B-A3B-Instruct](https://huggingface.co/Qwen/Qwen3-Coder-30B-A3B-Instruct) | Deeper code reasoning | Large total weights despite sparse active parameters; not a default for free Colab |
+| [Qwen3-Coder-Next](https://huggingface.co/Qwen/Qwen3-Coder-Next) | Long-context and agentic coding tasks | 80B total parameters and 256K native context per model card; advanced deployment option |
+| [Qwen3.8-27B](https://huggingface.co/Qwen/Qwen3.8-27B) | Screenshot, diagram, and text interpretation | Vision-language candidate; full-precision weights exceed many hosted notebook GPU budgets |
+| [gpt-oss-20b](https://huggingface.co/openai/gpt-oss-20b) | Reasoning challenge and adjudication | General reasoning model; check supported runtime and output format |
+| [StarCoder2-7B](https://huggingface.co/bigcode/starcoder2-7b) | Completion and fill-in-middle tasks | Not instruction-tuned for ordinary chat-style review; BigCode OpenRAIL-M terms apply |
 
-Check each official model card for its current license, supported modalities, revision, required Transformers version, and quantization compatibility before use. Open-weight does not automatically mean every model has the same license or usage conditions. These model names are options, not a guarantee of a particular quality ranking.
+These are candidates, not a universal performance ranking. Verify the exact checkpoint revision, license, supported modalities, inference API, and quantization provenance before use. Model weights, datasets, and dependencies have separate terms.
+
+Colab resources are not guaranteed: GPU access, available memory, and runtime duration vary. The deterministic scan does not need model weights, so run that first. See the [official Colab FAQ](https://research.google.com/colaboratory/faq.html).
 
 ## Run in Google Colab
 
-1. Open the [notebook](https://colab.research.google.com/github/KumarKumar89/Code-Review/blob/main/multimodal-code-reviewer-swarm/notebooks/Colab_Code_Reviewer_Swarm.ipynb). If the private-repository link does not open, download the notebook from GitHub and upload it into Colab.
-2. Run the runtime-detection cell and check whether the current runtime has a GPU.
-3. Upload a source ZIP or selected source files. Do not include credentials, private keys, environment files, build output, or data you are not permitted to place in hosted Colab.
-4. Run the deterministic scan and inspect the findings.
-5. Download the JSON report. Enable optional model cells only after checking memory requirements, model terms, and library compatibility.
+1. Open the [notebook](https://colab.research.google.com/github/KumarKumar89/Code-Review/blob/main/multimodal-code-reviewer-swarm/notebooks/Colab_Code_Reviewer_Swarm.ipynb).
+2. Run the hardware-detection cell and inspect the actual runtime.
+3. Upload a repository ZIP or selected source files.
+4. Run the deterministic scan and review the table.
+5. Download the JSON report. Enable optional model cells only after reviewing model terms, runtime compatibility, and memory requirements.
 
-The deterministic scan does not require model weights. Local inference is optional and may be slow or impossible on a constrained CPU/GPU runtime. A model-loading failure is not evidence of a target-code defect.
+If the Colab link cannot access the repository, download the notebook from GitHub and upload it to Colab. Do not upload code, customer information, credentials, or other data unless you are authorized to place it in a hosted notebook environment.
 
 ## Run locally
 
-From the repository root:
+From the repository root, install the small test dependency set:
 
     python -m pip install -r multimodal-code-reviewer-swarm/requirements-colab.txt
 
+Run the test suite:
+
     PYTHONPATH=multimodal-code-reviewer-swarm/src python -m pytest -q multimodal-code-reviewer-swarm/tests
+
+Run the deterministic scanner against a directory:
 
     PYTHONPATH=multimodal-code-reviewer-swarm/src python -m reviewer_swarm.review --path /path/to/repository --output review-findings.json
 
-The scanner accepts a directory path. It reads supported files as text, skips common generated/virtual-environment directories, and omits files above its configured size limit.
+The scanner reads supported files as text, skips common generated directories and files above its configured size limit, and sorts results deterministically.
 
-## Output and interpretation
+## Interpreting findings
 
-The scanner's JSON findings include a rule identifier, category, severity, confidence estimate, file path, line number, evidence excerpt (with detected credential values redacted), recommendation, and verification state.
+- **A pattern match is not proof.** Review surrounding code and data flow before calling a finding a defect.
+- **No result does not mean safe.** The rule set is intentionally small and may miss complex or language-specific vulnerabilities.
+- **Confidence values are heuristics.** They are not calibrated probabilities and should not be treated as benchmark scores.
+- **Verification status matters.** Separate syntax findings, pattern matches, reproduced failures, and unresolved hypotheses.
+- **Patches require tests.** This version does not apply generated repairs automatically.
 
-- **Static support:** directly produced by deterministic syntax analysis or a matching rule.
-- **Unverified:** a pattern or hypothesis requiring context and independent verification.
-- **Not a finding:** a match can be harmless in context; close it only after recording why it is a false positive.
+Do not report precision, recall, or a detection rate unless a versioned benchmark with known labels has actually been run and the counts can be reproduced.
 
-Do not interpret the heuristic confidence values as calibrated probabilities. Do not claim precision, recall, or detection rate until a versioned benchmark with ground-truth labels has been run and the counts have been reported.
+## Security and privacy boundaries
 
-## Security and privacy
-
-- **No target-code execution:** the current scanner reads files; it does not run project code, notebooks, setup scripts, or generated patches.
-- **Archive validation:** the notebook checks resolved ZIP member paths to block basic path traversal and applies a per-member uncompressed-size limit. Treat archives from unknown sources cautiously; this is not a complete archive sandbox.
-- **Resource limits:** large files and common generated directories are skipped. Review scope and exclusions can affect coverage.
-- **Secret handling:** possible hard-coded credential assignments are reported with their values redacted. Avoid displaying raw source, environment variables, access tokens, or secrets in notebook output.
-- **Model safety:** source code and comments may contain prompt-injection instructions. Pass source as untrusted data and restrict tools to an explicit allowlist.
-- **No automatic remediation:** this version does not silently rewrite source or push commits.
-
-Standard Google Colab is a hosted notebook environment, not a hardened sandbox for arbitrary untrusted code. Keep execution of scanned repositories out of this workflow.
-
-## Project layout
-
-    multimodal-code-reviewer-swarm/
-    ├── README.md
-    ├── MODEL_CATALOG.md
-    ├── model_registry.json
-    ├── requirements-colab.txt
-    ├── notebooks/
-    │   └── Colab_Code_Reviewer_Swarm.ipynb
-    ├── src/reviewer_swarm/
-    │   ├── __init__.py
-    │   ├── registry.py
-    │   └── review.py
-    └── tests/
-        ├── test_registry.py
-        └── test_review.py
-
-The GitHub Actions workflow lives at .github/workflows/reviewer-swarm-ci.yml.
+- Target source is treated as data; the current scanner does not import or execute it.
+- The notebook performs basic ZIP path checks and enforces a per-entry uncompressed-size limit. These safeguards do not make arbitrary archives fully safe; archive-wide resource limits and hostile-file analysis remain future hardening work.
+- Avoid sharing secrets, API tokens, private keys, environment files, or proprietary data with a hosted runtime or model.
+- Treat source comments and other repository content as untrusted input if model inference is enabled; never turn source text into trusted tool instructions.
+- Standard Colab is not a hardened sandbox for running unknown repository code. Keep target-code execution out of this workflow.
+- No patches are silently applied, committed, pushed, or merged.
 
 ## Roadmap
 
-- [x] Deterministic first-pass repository scanner.
-- [x] Model catalog and machine-readable model registry.
-- [x] Colab notebook with upload and JSON export.
+- [x] Deterministic scanner and model-registry validation.
+- [x] Colab starter notebook and JSON export.
 - [x] Unit tests and CI validation workflow.
-- [ ] Wire structured model outputs into the same finding schema.
-- [ ] Add language-aware parsing and more precise, low-noise checks.
-- [ ] Implement independently scheduled agents with bounded retries and auditable adjudication.
-- [ ] Add a versioned, ground-truth benchmark with precision/recall and false-positive analysis.
-- [ ] Add safe patch-diff generation and isolated regression-test verification.
-- [ ] Complete a supported vision-model integration and test it on actual image inputs.
+- [ ] Use a single structured finding schema for deterministic and model-generated results.
+- [ ] Implement real bounded agent orchestration, retries, timeout handling, and auditable adjudication.
+- [ ] Add language-specific parsers and low-noise security-tool integrations.
+- [ ] Complete and test the image/screenshot inference path on supported hardware.
+- [ ] Add a labeled, versioned benchmark with false-positive and false-negative analysis.
+- [ ] Generate proposed patch diffs and verify them with regression tests in an isolated workspace.
 
 ## Contributing
 
-Small, test-backed improvements are preferred. Add a regression test for each bug fix, document any new tool's trust boundary, pin compatible dependencies, and distinguish reproduced issues from model-generated hypotheses.
+Prefer small, test-backed changes. Include a regression test for bug fixes, document the trust boundary of new tools, avoid exposing secrets in fixtures, and label unverified AI hypotheses honestly. Run the project tests before opening a pull request.
 
 ## License
 
-No project-level license grant is stated here for the whole repository. Check the repository's license files before reuse. Every model checkpoint and third-party dependency remains subject to its own license and usage terms.
+No repository-wide license grant is stated in this README. Check the repository's license files before reusing or redistributing project source. Every model checkpoint, dataset, and third-party dependency remains governed by its own license and usage terms.
