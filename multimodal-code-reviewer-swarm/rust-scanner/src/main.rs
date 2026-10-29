@@ -39,7 +39,7 @@ fn rules() -> Result<Vec<Rule>> {
         ("RELIABILITY-BARE-EXCEPT", "reliability", "low", 0.65, r"(?m)^\s*except\s*:\s*(?:#.*)?$", "Prefer handling expected exception types explicitly."),
         ("RUST-UNSAFE", "correctness", "low", 0.55, r"\bunsafe\s*\{", "Audit unsafe blocks for valid invariants and memory-safety obligations."),
     ];
-    definitions.iter().map(|(id, category, severity, confidence, pattern, recommendation)| {
+    definitions.into_iter().map(|(id, category, severity, confidence, pattern, recommendation)| {
         Ok(Rule {
             id, category, severity, confidence,
             pattern: Regex::new(pattern).with_context(|| format!("invalid regex for {id}"))?,
