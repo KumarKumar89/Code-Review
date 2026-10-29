@@ -145,6 +145,12 @@ def _deduplicate(findings: list[dict[str, Any]]) -> list[dict[str, Any]]:
             roles = set(str(unique[key].get("agent_role", "")).split(","))
             roles.update(str(finding.get("agent_role", "")).split(","))
             unique[key]["agent_role"] = ",".join(sorted(role for role in roles if role))
+    def safe_line(item: dict[str, Any]) -> int:
+        try:
+            return int(item.get("line", 0) or 0)
+        except (TypeError, ValueError):
+            return 0
+
     return sorted(unique.values(), key=lambda item: (
-        str(item.get("file_path", "")), int(item.get("line", 0) or 0), str(item.get("title", ""))
+        str(item.get("file_path", "")), safe_line(item), str(item.get("title", ""))
     ))
