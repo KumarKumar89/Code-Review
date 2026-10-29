@@ -13,8 +13,9 @@ from pathlib import Path
 from typing import Any
 
 DEFAULT_MODEL = "qwen2.5-coder:3b"
-MAX_FILE_CHARS = 12_000
-MAX_FILES = 80
+MAX_FILE_CHARS = 3_000
+MAX_FILES = 30
+MAX_TOTAL_CHARS = 18_000
 ROLES = {
     "correctness": "Find likely correctness defects, edge cases, type errors, and broken invariants.",
     "security": "Find concrete security flaws and trust-boundary violations. Do not flag generic best practices as vulnerabilities.",
@@ -28,8 +29,14 @@ def _read_sources(root: Path, max_files: int = MAX_FILES) -> list[dict[str, str]
     excluded = {".git", ".venv", "venv", "node_modules", "dist", "build", "__pycache__", ".pytest_cache"}
     suffixes = {".py", ".pyi", ".js", ".jsx", ".ts", ".tsx", ".rs", ".go", ".java", ".rb", ".php", ".sh", ".yaml", ".yml", ".toml"}
     sources: list[dict[str, str]] = []
+    total_chars = 0
+    import re
+    secret_patterns = [
+        re.compile(r"(?i)(api[_-]?key|secret|password|access[_-]?token)\s*[:=]\s*(['"]).+?\2"),
+        re.compile(r"(?i)(bearer\s+)[A-Za-z0-9._~+/-]{12,}"),
+    ]
     for path in sorted(root.rglob("*")):
-        if len(sources) >= max_files:
+        if len(sources) >= max_files or total_chars >= MAX_TOTAL_CHARS:
             break
         if not path.is_file() or path.is_symlink() or path.suffix.lower() not in suffixes:
             continue
@@ -41,7 +48,11 @@ def _read_sources(root: Path, max_files: int = MAX_FILES) -> list[dict[str, str]
         except (OSError, ValueError):
             continue
         if text.strip():
-            sources.append({"path": rel.as_posix(), "content": text[:MAX_FILE_CHARS]})
+            text = text[:min(MAX_FILE_CHARS, MAX_TOTAL_CHARS - total_chars)]
+            for pattern in secret_patterns:
+                text = pattern.sub(lambda match: match.group(1) + "=[REDACTED]", text)
+            sources.append({"path": rel.as_posix(), "content": text})
+            total_chars += len(text)
     return sources
 
 
