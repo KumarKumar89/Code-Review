@@ -32,7 +32,7 @@ def _read_sources(root: Path, max_files: int = MAX_FILES) -> list[dict[str, str]
     total_chars = 0
     import re
     secret_patterns = [
-        re.compile(r"(?i)(api[_-]?key|secret|password|access[_-]?token)\s*[:=]\s*(['"]).+?\2"),
+        re.compile(r"""(?i)(api[_-]?key|secret|password|access[_-]?token)\s*[:=]\s*(['"]).+?\2"""),
         re.compile(r"(?i)(bearer\s+)[A-Za-z0-9._~+/-]{12,}"),
     ]
     for path in sorted(root.rglob("*")):
