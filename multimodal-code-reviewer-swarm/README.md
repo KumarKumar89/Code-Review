@@ -37,7 +37,7 @@ A Google Colab-first prototype for evidence-led code review that combines determ
 | Python correctness | Uses Python AST parsing to report syntax errors with a source line |
 | Pattern checks | Flags selected dynamic-evaluation, shell, possible credential, TODO/FIXME, and bare-exception patterns |
 | Model registry | Validates required fields, unique IDs, links, modalities, and the configured default |
-| Colab notebook | Uploads a ZIP or selected files, runs a notebook-local scanner, displays findings, and exports JSON |
+| Colab notebook | Accepts a pasted public repository URL (GitHub/GitLab/Bitbucket, `owner/repo`, or direct `.git`) or an uploaded ZIP/selected files, runs a notebook-local scanner, displays findings, and exports JSON |
 | Model inference | Commented, opt-in text and image inference examples; not automatically invoked |
 | Tests | Unit tests cover the registry and deterministic scanner |
 | CI | Runs tests and validates registry JSON and notebook JSON/Python-cell syntax |
@@ -153,10 +153,28 @@ Colab does not guarantee a GPU or a fixed memory capacity. See the [official Col
 
 1. Open the [notebook](https://colab.research.google.com/github/KumarKumar89/Code-Review/blob/main/multimodal-code-reviewer-swarm/notebooks/Colab_Code_Reviewer_Swarm.ipynb). If access does not work, download the notebook from GitHub and upload it into Colab.
 2. Run the environment-detection cell.
-3. Upload a source ZIP or a selection of source files.
+3. Choose the review target: paste any **public repository URL** into the `REPO_URL` variable (or the input box, then click *Fetch & review target*) — GitHub, GitLab, Bitbucket, `owner/repo` shorthand, or a direct `.git` URL are accepted and shallow-cloned without executing repository code; alternatively upload a source ZIP or a selection of source files.
 4. Run the deterministic scan.
 5. Inspect findings and download the JSON report.
-6. Enable optional model cells only after checking runtime resources, package compatibility, model terms, and the sensitivity of the source you are uploading.
+6. Enable optional model cells only after checking runtime resources, package compatibility, model terms, and the sensitivity of the source you are reviewing.
+
+## Review a public repository from the command line
+
+The same URL input is available without Colab through the shared ingestion module (`reviewer_swarm.ingest`):
+
+```bash
+# Paste any public repository link; a JSON report is written locally.
+python multimodal-code-reviewer-swarm/scripts/review_repo_url.py https://github.com/httpie/httpie
+
+# owner/repo shorthand, GitLab/Bitbucket links, and direct .git URLs also work.
+python multimodal-code-reviewer-swarm/scripts/review_repo_url.py octocat/Hello-World --output report.json
+
+# Or use the pipeline CLI directly (--path for local directories, --repo-url for links).
+PYTHONPATH=multimodal-code-reviewer-swarm/src python -m reviewer_swarm.pipeline \
+  --repo-url https://gitlab.com/group/project --checkout-dir /tmp/checkouts
+```
+
+URLs that embed credentials are rejected; only public repositories are fetched. Cloning never executes repository code, and the fetched tree is scanned by the same deterministic, non-executing scanner.
 
 The notebook does not need a paid inference API for the default deterministic flow. Optional model inference downloads weights into the current runtime and may run slowly or fail if the model does not fit.
 

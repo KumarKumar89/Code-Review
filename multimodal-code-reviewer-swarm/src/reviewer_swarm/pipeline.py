@@ -8,6 +8,7 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
+from reviewer_swarm.ingest import fetch_repository, redact_repo_url
 from reviewer_swarm.review import scan_to_json
 from reviewer_swarm.agents import review_with_local_model
 
@@ -35,10 +36,26 @@ def run_review(
     use_model: bool = False,
     model: str | None = None,
     rust_binary: str | None = None,
+    repo_url: str | None = None,
+    checkout_parent: str | Path | None = None,
 ) -> dict[str, Any]:
-    root = Path(repository).expanduser().resolve()
-    if not root.is_dir():
-        raise ValueError(f"Repository path must be an existing directory: {root}")
+    """Review a local directory, or fetch and review a public repository by URL.
+
+    Provide exactly one of ``repository`` (an existing local directory) or
+    ``repo_url`` (a public GitHub/GitLab/Bitbucket/direct-git URL). When
+    ``repo_url`` is used the repository is shallow-cloned into
+    ``checkout_parent`` (a temp directory by default) before scanning.
+    """
+    source_url = redact_repo_url(repo_url) if repo_url else None
+    if repo_url is not None:
+        if str(repository).strip():
+            raise ValueError("Provide either a local --path or a --repo-url, not both.")
+        root, ref = fetch_repository(repo_url, dest_parent=checkout_parent)
+    else:
+        root = Path(repository).expanduser().resolve()
+        if not root.is_dir():
+            raise ValueError(f"Repository path must be an existing directory: {root}")
+        ref = None
     static_findings = None
     scanner = "python"
     candidate_binary = rust_binary or os.getenv("REVIEW_RUST_BINARY")
@@ -52,6 +69,8 @@ def run_review(
     return {
         "schema_version": "1.0",
         "repository": str(root),
+        "source_url": source_url,
+        "revision": ref.ref if ref else None,
         "scanner": scanner,
         "static_findings": static_findings,
         "model_review": model_result,
@@ -63,14 +82,30 @@ def run_review(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Evidence-first local code-review pipeline.")
-    parser.add_argument("--path", required=True, help="Repository directory to review.")
+    parser = argparse.ArgumentParser(description="Evidence-first code-review pipeline.")
+    target = parser.add_mutually_exclusive_group(required=True)
+    target.add_argument("--path", help="Local repository directory to review.")
+    target.add_argument(
+        "--repo-url",
+        help=(
+            "Public repository URL to fetch and review "
+            "(GitHub/GitLab/Bitbucket link, owner/repo shorthand, or direct .git URL)."
+        ),
+    )
+    parser.add_argument("--checkout-dir", default=None, help="Parent directory for URL clones (default: temp).")
     parser.add_argument("--output", default="review-report.json", help="Output JSON path.")
     parser.add_argument("--model", action="store_true", help="Run local Ollama specialist agents.")
     parser.add_argument("--model-name", default=None, help="Ollama model tag; defaults to REVIEW_MODEL or qwen2.5-coder:3b.")
     parser.add_argument("--rust-binary", default=None, help="Optional built Rust scanner executable.")
     args = parser.parse_args()
-    report = run_review(args.path, use_model=args.model, model=args.model_name, rust_binary=args.rust_binary)
+    report = run_review(
+        args.path or "",
+        use_model=args.model,
+        model=args.model_name,
+        rust_binary=args.rust_binary,
+        repo_url=args.repo_url,
+        checkout_parent=args.checkout_dir,
+    )
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
