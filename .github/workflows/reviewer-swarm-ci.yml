@@ -1,0 +1,45 @@
+name: Multimodal Code Reviewer Swarm CI
+
+on:
+  push:
+    paths:
+      - "multimodal-code-reviewer-swarm/**"
+      - ".github/workflows/reviewer-swarm-ci.yml"
+  pull_request:
+    paths:
+      - "multimodal-code-reviewer-swarm/**"
+      - ".github/workflows/reviewer-swarm-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install test dependencies
+        run: python -m pip install "pytest>=8,<9"
+      - name: Run unit tests
+        run: PYTHONPATH=multimodal-code-reviewer-swarm/src python -m pytest -q multimodal-code-reviewer-swarm/tests
+      - name: Validate JSON registry
+        run: python -m json.tool multimodal-code-reviewer-swarm/model_registry.json > /dev/null
+      - name: Validate notebook JSON and Python syntax
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path("multimodal-code-reviewer-swarm/notebooks/Colab_Code_Reviewer_Swarm.ipynb")
+          notebook = json.loads(path.read_text(encoding="utf-8"))
+          assert notebook["nbformat"] == 4
+          code_cells = [cell for cell in notebook["cells"] if cell["cell_type"] == "code"]
+          for index, cell in enumerate(code_cells):
+              source = "".join(cell.get("source", []))
+              compile(source, f"{path}:cell-{index}", "exec")
+          print(f"Notebook JSON valid; {len(code_cells)} code cells compile.")
+          PY

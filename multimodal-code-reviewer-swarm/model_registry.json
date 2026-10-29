@@ -1,0 +1,79 @@
+[
+  {
+    "id": "Qwen/Qwen2.5-Coder-3B-Instruct",
+    "family": "Qwen2.5-Coder",
+    "roles": ["low_resource_code_review", "bug_hypothesis", "repair_suggestion"],
+    "modalities": ["text", "code"],
+    "license": "Apache-2.0 (verify exact card)",
+    "resource_tier": "small",
+    "recommended_default": true,
+    "official_url": "https://huggingface.co/Qwen/Qwen2.5-Coder-3B-Instruct",
+    "notes": "Practical starting candidate for lower-resource local inference. Colab GPU availability and fit are not guaranteed."
+  },
+  {
+    "id": "Qwen/Qwen2.5-Coder-7B-Instruct",
+    "family": "Qwen2.5-Coder",
+    "roles": ["code_review", "bug_hypothesis", "repair_suggestion"],
+    "modalities": ["text", "code"],
+    "license": "Apache-2.0",
+    "resource_tier": "medium",
+    "recommended_default": false,
+    "official_url": "https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct",
+    "notes": "Higher-capacity coding baseline. Check precision and VRAM requirements before loading."
+  },
+  {
+    "id": "Qwen/Qwen3-Coder-30B-A3B-Instruct",
+    "family": "Qwen3-Coder",
+    "roles": ["deep_code_review", "repository_reasoning", "patch_planning"],
+    "modalities": ["text", "code"],
+    "license": "Verify exact model-card license before deployment",
+    "resource_tier": "large",
+    "recommended_default": false,
+    "official_url": "https://huggingface.co/Qwen/Qwen3-Coder-30B-A3B-Instruct",
+    "notes": "30.5B total and 3.3B activated parameters as described by the model card. Low active-parameter count does not imply low total weight memory."
+  },
+  {
+    "id": "Qwen/Qwen3-Coder-Next",
+    "family": "Qwen3-Coder-Next",
+    "roles": ["agentic_coding", "long_context_review", "error_recovery"],
+    "modalities": ["text", "code"],
+    "license": "Apache-2.0",
+    "resource_tier": "server",
+    "recommended_default": false,
+    "official_url": "https://huggingface.co/Qwen/Qwen3-Coder-Next",
+    "notes": "80B total, 3B activated parameters, 256K context per model card. Not a free-Colab default."
+  },
+  {
+    "id": "Qwen/Qwen3.8-27B",
+    "family": "Qwen3.8",
+    "roles": ["multimodal_code_review", "screenshot_analysis", "diagram_review", "code_reasoning"],
+    "modalities": ["text", "code", "image"],
+    "license": "Apache-2.0",
+    "resource_tier": "large",
+    "recommended_default": false,
+    "official_url": "https://huggingface.co/Qwen/Qwen3.8-27B",
+    "notes": "Image-text model. Full BF16 repository is about 55.6 GB; require appropriate hardware or a validated compatible quantized checkpoint."
+  },
+  {
+    "id": "openai/gpt-oss-20b",
+    "family": "gpt-oss",
+    "roles": ["adversarial_review", "finding_adjudication", "verification_planning"],
+    "modalities": ["text", "reasoning"],
+    "license": "Apache-2.0",
+    "resource_tier": "large",
+    "recommended_default": false,
+    "official_url": "https://huggingface.co/openai/gpt-oss-20b",
+    "notes": "General reasoning model; check architecture support and expected output format in the installed Transformers version."
+  },
+  {
+    "id": "bigcode/starcoder2-7b",
+    "family": "StarCoder2",
+    "roles": ["code_completion", "fill_in_middle"],
+    "modalities": ["text", "code"],
+    "license": "BigCode OpenRAIL-M v1",
+    "resource_tier": "medium",
+    "recommended_default": false,
+    "official_url": "https://huggingface.co/bigcode/starcoder2-7b",
+    "notes": "Official card says it is not instruction-tuned; use for completion-oriented tasks rather than the default chat reviewer."
+  }
+]

@@ -1,0 +1,9 @@
+# Core scanner and registry use only the Python standard library.
+pytest>=8.0,<9.0
+
+# Optional local model inference; install only when needed:
+# transformers
+# accelerate
+# torch
+# pillow
+# ipywidgets
