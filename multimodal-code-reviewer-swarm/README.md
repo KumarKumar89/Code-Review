@@ -1,85 +1,126 @@
 # Multimodal Code Reviewer Swarm
 
-A Colab-first starter for evidence-led code review using several open-weight coding/reasoning models, deterministic static checks, and optional vision-language review of screenshots or architecture diagrams.
+A Google Colab-first prototype for evidence-led code review using deterministic source inspection and optional open-weight coding and vision-language models.
 
-This project currently lives under the multimodal-code-reviewer-swarm folder in the existing KumarKumar89/Code-Review repository. The folder is organized so it can later be copied into a dedicated repository.
+> **Status: early-stage prototype.** The repository includes a deterministic scanner, model catalog, model registry, starter Colab notebook, tests, and CI workflow. The optional model-inference cells are currently examples that users enable manually. Fully automated independent agents, structured LLM finding adjudication, validated patch generation, and a production-grade multimodal pipeline remain roadmap items.
 
-## What it does
+## At a glance
 
-- Catalogues coding and multimodal model candidates with official model-card links and license notes.
-- Separates deterministic checks from model-generated hypotheses.
-- Runs Python syntax checks and conservative pattern-based scans without executing the target repository.
-- Reuses one locally loaded model across specialist prompts to reduce VRAM pressure.
-- Includes a Colab notebook for ZIP-uploaded source code and optional screenshot review.
-- Exports machine-readable JSON findings and includes tests for the core registry and scanner.
+| Area | Current capability |
+|---|---|
+| Inputs | ZIP archives or selected source files in the Colab notebook |
+| Deterministic analysis | Python syntax checks and conservative pattern-based rules |
+| Languages | Multiple text-based source/config formats can be scanned for simple patterns; Python gets AST syntax parsing |
+| Model catalog | Seven linked coding, reasoning, and vision-language candidates |
+| Model execution | Optional, local inference examples; one model at a time is recommended |
+| Image understanding | A commented vision-language example for screenshots/diagrams; not a completed, hardware-tested pipeline |
+| Output | Downloadable JSON findings |
+| Safety model | Target source is read as data and is not intentionally executed |
+| Automatic patches | Not implemented |
 
-This is a starter implementation, not an automated security certification or a promise to find every defect.
+## Quick links
+
+- [Repository overview](../README.md)
+- [Colab notebook](notebooks/Colab_Code_Reviewer_Swarm.ipynb)
+- [Coding and multimodal model catalog](MODEL_CATALOG.md)
+- [Validated model registry](model_registry.json)
+- [Scanner implementation](src/reviewer_swarm/review.py)
+- [Registry implementation](src/reviewer_swarm/registry.py)
+- [Unit tests](tests/)
+
+## Architecture
+
+Source ZIP/files → path validation and inventory → deterministic scanner → structured findings → JSON report → human verification and regression tests.
+
+Optional model prompts can be used for code critique or vision-language interpretation. Outputs from a model must remain separate from deterministic observations until they have been checked. Reusing one model across specialist prompts is role decomposition, not independent multi-model consensus.
 
 ## Model selection
 
-Do not load all checkpoints simultaneously.
+For a constrained Colab runtime, start with a small text model only if model inference is needed. Do not load every checkpoint simultaneously. First run the deterministic scan, which does not require model weights.
 
-| Role | Model | Intended use | Practical note |
-|---|---|---|---|
-| Lower-resource coding baseline | [Qwen2.5-Coder-3B-Instruct](https://huggingface.co/Qwen/Qwen2.5-Coder-3B-Instruct) | Text/code review prompts | Good starting point when Colab GPU memory is limited; actual fit still depends on runtime and precision |
-| Stronger coding specialist | [Qwen3-Coder-30B-A3B-Instruct](https://huggingface.co/Qwen/Qwen3-Coder-30B-A3B-Instruct) | Repository-level code reasoning | Large total model despite sparse active parameters; generally not a free-Colab default |
-| Repository-scale agentic coder | [Qwen3-Coder-Next](https://huggingface.co/Qwen/Qwen3-Coder-Next) | Long-context coding-agent tasks | 80B total parameters; server-class or carefully quantized deployment |
-| Multimodal reviewer | [Qwen3.8-27B](https://huggingface.co/Qwen/Qwen3.8-27B) | Code reasoning plus screenshot/diagram analysis | Vision-capable, but full BF16 weights are too large for many Colab runtimes |
-| Reasoning/adjudication candidate | [gpt-oss-20b](https://huggingface.co/openai/gpt-oss-20b) | Challenge findings and assess alternatives | General reasoning model, not a code-specialist or image model |
-| Code-completion specialist | [StarCoder2-7B](https://huggingface.co/bigcode/starcoder2-7b) | Completion and fill-in-middle tasks | Not instruction-tuned for chat-style review; BigCode OpenRAIL-M terms apply |
-| Additional coding option | [Qwen2.5-Coder-7B-Instruct](https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct) | Text-based review and fixes | Use a compatible quantized checkpoint when required |
+| Model | Suggested role | Colab guidance |
+|---|---|---|
+| [Qwen2.5-Coder-3B-Instruct](https://huggingface.co/Qwen/Qwen2.5-Coder-3B-Instruct) | Lower-resource text/code review | Candidate for initial experiments; check actual runtime resources and model terms |
+| [Qwen2.5-Coder-7B-Instruct](https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct) | Higher-capacity text review | Requires more memory; may need a supported quantized build |
+| [Qwen3-Coder-30B-A3B-Instruct](https://huggingface.co/Qwen/Qwen3-Coder-30B-A3B-Instruct) | Deep code reasoning | Large total weights; generally not a free-Colab default |
+| [Qwen3-Coder-Next](https://huggingface.co/Qwen/Qwen3-Coder-Next) | Long-context/agentic coding | 80B-class model; treat as an advanced deployment option |
+| [Qwen3.8-27B](https://huggingface.co/Qwen/Qwen3.8-27B) | Screenshot and diagram understanding plus text | Multimodal, but full BF16 weights exceed the capacity of many Colab runtimes |
+| [gpt-oss-20b](https://huggingface.co/openai/gpt-oss-20b) | Reasoning challenge/adjudication | Check its required prompt format and compatible inference stack |
+| [StarCoder2-7B](https://huggingface.co/bigcode/starcoder2-7b) | Code completion/fill-in-middle | Not an instruction-tuned general chat reviewer; BigCode OpenRAIL-M terms apply |
 
-Model availability, licenses, architecture support, and model-card claims can change. Recheck the linked official card before downloading or redistributing weights. Benchmark scores are not directly comparable unless benchmark, date, harness, and model revision match.
+The model catalog is a shortlist, not a guaranteed ranking. Check the exact official model card for the revision, license, modalities, runtime compatibility, and quantization provenance before download or redistribution. Model licenses are separate from the license of this project's own source code.
 
-## Quick start in Google Colab
+## Run in Google Colab
 
-1. Open notebooks/Colab_Code_Reviewer_Swarm.ipynb in Colab. Because the parent repository is private, download the notebook first or open it after authenticating to GitHub.
-2. Run the runtime-information cell.
-3. Upload a ZIP containing the target source repository. Do not include secrets, virtual environments, build output, or confidential files that should not be shared with a hosted notebook runtime.
-4. Run the deterministic scan and inspect the JSON findings.
-5. Only enable local LLM inference if you accept the model download, memory, and runtime costs. The notebook does not call a paid inference API.
+1. Open the notebook linked above. If GitHub-to-Colab access does not work for this private repository, download the notebook file and upload it into Colab.
+2. Run the hardware-detection cell. Colab resource availability varies; no specific GPU is assumed.
+3. Upload a ZIP of the repository you want to inspect or select individual source files.
+4. Run the deterministic scanner and review the output table.
+5. Download the JSON report.
+6. Enable optional text or vision-model examples only after reviewing model terms, library compatibility, memory requirements, and the sensitivity of the source being uploaded.
 
-For a local checkout:
+Do not upload credentials, private keys, environment files, customer data, or code you are not permitted to put in a hosted notebook runtime.
 
-    python -m pip install -r requirements-colab.txt
-    PYTHONPATH=src python -m pytest -q
-    PYTHONPATH=src python -m reviewer_swarm.review --path /path/to/repository --output review-findings.json
+## Run locally
 
-## Review workflow
+From the top-level Code-Review repository:
 
-1. Inventory source files using allowlisted extensions and excluded directories.
-2. Run syntax checks and deterministic heuristics.
-3. Optionally ask one locally loaded model to review bounded source chunks using specialist prompts.
-4. Treat model findings as hypotheses until source evidence or tests support them.
-5. Export JSON findings for human review.
+    python -m pip install -r multimodal-code-reviewer-swarm/requirements-colab.txt
 
-The role prompts are sequential when they share one checkpoint. This is role decomposition, not independent multi-model consensus. True model diversity requires loading different checkpoints sequentially or using separate machines.
+    PYTHONPATH=multimodal-code-reviewer-swarm/src python -m pytest -q multimodal-code-reviewer-swarm/tests
 
-## Safety and limitations
+    PYTHONPATH=multimodal-code-reviewer-swarm/src python -m reviewer_swarm.review --path /path/to/repository --output review-findings.json
 
-- Target files are read as data; this project does not import or execute the target repository.
-- ZIP extraction in the notebook checks path traversal before writing files.
-- Pattern-based security checks can have false positives and false negatives.
-- No generated patch is applied automatically.
-- Do not place GitHub tokens, cloud credentials, private keys, customer data, or other secrets in notebook output.
-- Standard Colab is not a hardened sandbox for executing untrusted code. This project does not execute target code.
-- Model-generated review output is not proof. Validate important findings using reproducible tests, static analysis, and human review.
+The registry module validates required model fields, unique IDs, links, and the configured default. The scanner reads supported files as text, skips common generated directories and files above its configured size limit, and reports stable-sorted findings.
 
-## Project layout
+## What a finding means
 
-    model_registry.json
+A finding is a review lead, not a verdict. Current rules can detect patterns such as dynamic evaluation, subprocess shell use, possible hard-coded secrets, unresolved TODO/FIXME markers, bare Python exception handlers, and Python syntax errors.
+
+- A pattern match can be a false positive.
+- Absence of a finding does not prove the code is safe.
+- Confidence values are heuristic, not calibrated probabilities.
+- Sensitive matched credential values are redacted from the secret-pattern evidence.
+- High-impact findings need contextual review and reproducible tests.
+
+No precision, recall, or detection-rate claim is made until the system is measured against a versioned benchmark with known labels.
+
+## Security boundaries
+
+- The scanner does not import or execute target source, notebook cells, setup scripts, or model-generated code.
+- The Colab ZIP handler checks resolved paths against the extraction root and rejects basic path traversal.
+- Archive checks and file-size limits are safeguards, not a complete sandbox for malicious archives.
+- Source code and comments can contain prompt injection. If model inference is enabled, treat file content strictly as untrusted data.
+- Do not put tokens, credentials, or secrets into notebook outputs or generated reports.
+- Standard Colab is not a hardened sandbox for running untrusted code. Keep target-code execution out of this workflow.
+- No patch is applied, committed, pushed, or merged automatically.
+
+## Project structure
+
+    README.md
     MODEL_CATALOG.md
+    model_registry.json
     requirements-colab.txt
-    src/reviewer_swarm/
-      __init__.py
-      registry.py
-      review.py
-    tests/
-      test_registry.py
-      test_review.py
-    notebooks/
-      Colab_Code_Reviewer_Swarm.ipynb
+    notebooks/Colab_Code_Reviewer_Swarm.ipynb
+    src/reviewer_swarm/__init__.py
+    src/reviewer_swarm/registry.py
+    src/reviewer_swarm/review.py
+    tests/test_registry.py
+    tests/test_review.py
 
-## License
+## Roadmap
 
-The source code in this project folder is provided under the MIT License unless otherwise stated. This license does not change the separate licenses or terms governing model weights, datasets, or third-party dependencies. StarCoder2 has its own BigCode OpenRAIL-M license.
+- [x] Deterministic first-pass scanner.
+- [x] Model catalog and JSON registry.
+- [x] Colab notebook, ZIP/source-file upload, and JSON export.
+- [x] Unit tests and GitHub Actions validation workflow.
+- [ ] Convert model responses into a validated structured finding schema.
+- [ ] Add bounded orchestration, retries, agent status, and evidence-based adjudication.
+- [ ] Add language-specific AST/parser and security-tool integrations.
+- [ ] Complete and test true multimodal inference on available hardware.
+- [ ] Add a labeled benchmark with false-positive/false-negative analysis.
+- [ ] Generate proposed diffs and verify them in an isolated test workspace.
+
+## License and reuse
+
+No project-level license grant is stated here for the full repository. Check repository license files before reusing or redistributing the source. Each model checkpoint, dependency, and dataset has its own license and terms.
