@@ -14,7 +14,7 @@ permissions:
   contents: read
 
 jobs:
-  unit-tests:
+  python-tests:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -43,3 +43,13 @@ jobs:
               compile(source, f"{path}:cell-{index}", "exec")
           print(f"Notebook JSON valid; {len(code_cells)} code cells compile.")
           PY
+
+  rust-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Compile Rust scanner
+        run: cargo check --manifest-path multimodal-code-reviewer-swarm/rust-scanner/Cargo.toml --locked
