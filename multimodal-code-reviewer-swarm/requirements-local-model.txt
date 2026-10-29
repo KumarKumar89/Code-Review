@@ -1,0 +1,11 @@
+# Core scanner/orchestrator use Python standard library; pytest is for tests.
+pytest>=8,<9
+
+# Optional Hugging Face inference for notebook workflows:
+# torch
+# transformers
+# accelerate
+# bitsandbytes
+
+# Recommended local laptop inference server: Ollama (install separately from https://ollama.com).
+# No API key or paid hosted inference endpoint is required for Ollama-local inference.
