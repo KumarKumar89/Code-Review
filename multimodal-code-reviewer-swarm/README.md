@@ -1,85 +1,98 @@
 # Multimodal Code Reviewer Swarm
 
-A Colab-first starter for evidence-led code review using several open-weight coding/reasoning models, deterministic static checks, and optional vision-language review of screenshots or architecture diagrams.
+An evidence-first code-review toolkit for local GPU laptops and Google Colab. The architecture combines a deterministic scanner, an optional parallel Rust scanner, sequential specialist prompts against a single local open-weight model, and structured reports.
 
-This project currently lives under the multimodal-code-reviewer-swarm folder in the existing KumarKumar89/Code-Review repository. The folder is organized so it can later be copied into a dedicated repository.
+This is a reviewer prototype, not a guarantee of perfect defect detection. No model or scanner can promise the fastest runtime or highest accuracy on every repository; benchmark quality against labeled examples before making such claims.
 
-## What it does
+## Architecture
 
-- Catalogues coding and multimodal model candidates with official model-card links and license notes.
-- Separates deterministic checks from model-generated hypotheses.
-- Runs Python syntax checks and conservative pattern-based scans without executing the target repository.
-- Reuses one locally loaded model across specialist prompts to reduce VRAM pressure.
-- Includes a Colab notebook for ZIP-uploaded source code and optional screenshot review.
-- Exports machine-readable JSON findings and includes tests for the core registry and scanner.
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the flow and trust boundaries.
 
-This is a starter implementation, not an automated security certification or a promise to find every defect.
+- **Deterministic layer:** Python AST checks and conservative patterns. Does not import or execute the target project.
+- **Fast path:** optional Rust scanner using parallel traversal (Rayon), ignore-aware file discovery, and compiled regexes.
+- **Agent layer:** optional local Ollama model with sequential correctness, security, and reliability review roles. One model is used at a time to reduce memory pressure.
+- **Evidence boundary:** deterministic findings and model hypotheses are separate in JSON; model findings remain unverified.
+- **Colab:** the existing notebook runs a non-executing first pass and supports optional model paths; free GPU availability is not guaranteed.
+- **Local GPU:** Ollama provides a simple local inference endpoint. No paid inference API key is required.
 
-## Model selection
+## Quick start — deterministic Python scanner
 
-Do not load all checkpoints simultaneously.
-
-| Role | Model | Intended use | Practical note |
-|---|---|---|---|
-| Lower-resource coding baseline | [Qwen2.5-Coder-3B-Instruct](https://huggingface.co/Qwen/Qwen2.5-Coder-3B-Instruct) | Text/code review prompts | Good starting point when Colab GPU memory is limited; actual fit still depends on runtime and precision |
-| Stronger coding specialist | [Qwen3-Coder-30B-A3B-Instruct](https://huggingface.co/Qwen/Qwen3-Coder-30B-A3B-Instruct) | Repository-level code reasoning | Large total model despite sparse active parameters; generally not a free-Colab default |
-| Repository-scale agentic coder | [Qwen3-Coder-Next](https://huggingface.co/Qwen/Qwen3-Coder-Next) | Long-context coding-agent tasks | 80B total parameters; server-class or carefully quantized deployment |
-| Multimodal reviewer | [Qwen3.8-27B](https://huggingface.co/Qwen/Qwen3.8-27B) | Code reasoning plus screenshot/diagram analysis | Vision-capable, but full BF16 weights are too large for many Colab runtimes |
-| Reasoning/adjudication candidate | [gpt-oss-20b](https://huggingface.co/openai/gpt-oss-20b) | Challenge findings and assess alternatives | General reasoning model, not a code-specialist or image model |
-| Code-completion specialist | [StarCoder2-7B](https://huggingface.co/bigcode/starcoder2-7b) | Completion and fill-in-middle tasks | Not instruction-tuned for chat-style review; BigCode OpenRAIL-M terms apply |
-| Additional coding option | [Qwen2.5-Coder-7B-Instruct](https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct) | Text-based review and fixes | Use a compatible quantized checkpoint when required |
-
-Model availability, licenses, architecture support, and model-card claims can change. Recheck the linked official card before downloading or redistributing weights. Benchmark scores are not directly comparable unless benchmark, date, harness, and model revision match.
-
-## Quick start in Google Colab
-
-1. Open notebooks/Colab_Code_Reviewer_Swarm.ipynb in Colab. Because the parent repository is private, download the notebook first or open it after authenticating to GitHub.
-2. Run the runtime-information cell.
-3. Upload a ZIP containing the target source repository. Do not include secrets, virtual environments, build output, or confidential files that should not be shared with a hosted notebook runtime.
-4. Run the deterministic scan and inspect the JSON findings.
-5. Only enable local LLM inference if you accept the model download, memory, and runtime costs. The notebook does not call a paid inference API.
-
-For a local checkout:
+From this folder:
 
     python -m pip install -r requirements-colab.txt
     PYTHONPATH=src python -m pytest -q
     PYTHONPATH=src python -m reviewer_swarm.review --path /path/to/repository --output review-findings.json
 
-## Review workflow
+This first pass requires no model download.
 
-1. Inventory source files using allowlisted extensions and excluded directories.
-2. Run syntax checks and deterministic heuristics.
-3. Optionally ask one locally loaded model to review bounded source chunks using specialist prompts.
-4. Treat model findings as hypotheses until source evidence or tests support them.
-5. Export JSON findings for human review.
+## Fast Rust scanner (optional)
 
-The role prompts are sequential when they share one checkpoint. This is role decomposition, not independent multi-model consensus. True model diversity requires loading different checkpoints sequentially or using separate machines.
+Install Rust using the official rustup installer, then build the scanner:
 
-## Safety and limitations
+    cargo build --release --manifest-path rust-scanner/Cargo.toml
 
-- Target files are read as data; this project does not import or execute the target repository.
-- ZIP extraction in the notebook checks path traversal before writing files.
-- Pattern-based security checks can have false positives and false negatives.
-- No generated patch is applied automatically.
-- Do not place GitHub tokens, cloud credentials, private keys, customer data, or other secrets in notebook output.
-- Standard Colab is not a hardened sandbox for executing untrusted code. This project does not execute target code.
-- Model-generated review output is not proof. Validate important findings using reproducible tests, static analysis, and human review.
+Run it directly:
 
-## Project layout
+    ./rust-scanner/target/release/review-scan /path/to/repository review-findings.json
 
-    model_registry.json
-    MODEL_CATALOG.md
-    requirements-colab.txt
-    src/reviewer_swarm/
-      __init__.py
-      registry.py
-      review.py
-    tests/
-      test_registry.py
-      test_review.py
-    notebooks/
-      Colab_Code_Reviewer_Swarm.ipynb
+Windows builds use the corresponding .exe path. The scanner respects common ignore rules, skips generated directories and files larger than 1 MB, and emits JSON. It does not execute scanned files. The Python AST scanner remains useful for Python syntax errors that the Rust regex pass does not detect.
+
+## Unified pipeline
+
+Set the source path in the command. The optional Rust executable is used when provided; otherwise the pipeline falls back to the Python scanner.
+
+    PYTHONPATH=src python -m reviewer_swarm.pipeline --path /path/to/repository --output review-report.json
+
+To use local model agents, first install [Ollama](https://ollama.com), start its local service, and download a model:
+
+    ollama pull qwen2.5-coder:3b
+
+Then run:
+
+    OLLAMA_HOST=http://127.0.0.1:11434 PYTHONPATH=src python -m reviewer_swarm.pipeline --path /path/to/repository --model --output review-report.json
+
+For a stronger model on a suitable machine, try qwen2.5-coder:7b. The actual latency and quality depend on GPU/CPU, RAM/VRAM, quantization, context size, repository size, and model version. The small default is a resource-conscious starting point, not a universal quality winner.
+
+Optional Rust + local model:
+
+    REVIEW_RUST_BINARY=/absolute/path/to/review-scan PYTHONPATH=src python -m reviewer_swarm.pipeline --path /path/to/repository --model
+
+On Windows PowerShell, set environment variables with $env:OLLAMA_HOST and $env:REVIEW_RUST_BINARY syntax.
+
+## Google Colab
+
+Open [Colab_Code_Reviewer_Swarm.ipynb](notebooks/Colab_Code_Reviewer_Swarm.ipynb). The notebook supports uploading source archives and running the deterministic scan without installing a model. It detects whether a GPU is available, but free Colab hardware and session duration vary.
+
+For optional inference in Colab, use only one supported model at a time and check the model card, license, runtime memory and Transformers compatibility first. Ollama's local-laptop path and Colab's Transformers path are separate options; Ollama on Colab is not required. Do not upload secrets or source code that policy does not permit in a hosted runtime.
+
+## Test
+
+    PYTHONPATH=src python -m pytest -q
+
+CI also compiles the Rust crate and validates the model registry and notebook syntax. A passing unit test does not prove model quality, GPU compatibility or full end-to-end runtime success.
+
+## Model options and licenses
+
+The existing [model catalog](MODEL_CATALOG.md) and [model registry](model_registry.json) describe candidates. Verify official model cards and licensing before downloading or commercial use. Open weights do not imply identical license terms.
+
+## Accuracy and safety rules
+
+1. Findings need a file path, line, and evidence; model output is a hypothesis, not proof.
+2. Verify high-impact findings through source tracing, reproduction, independent review, or regression tests.
+3. Never treat a model-generated confidence value as a calibrated probability.
+4. Do not execute the repository under review, run generated patches, or automatically push changes.
+5. Review reports for sensitive information before sharing them. The local model source loader caps context and redacts some likely secret patterns, but this is not a complete secret scanner.
+6. Keep Ollama bound to localhost unless you have intentionally secured the endpoint.
+
+## Performance roadmap
+
+- Use Rust for file discovery and parallel rule scanning.
+- Keep static checks cheap and always available.
+- Reuse one local model sequentially across specialist roles to conserve VRAM.
+- Add language-specific parsers and security analyzers where justified.
+- Establish a versioned, ground-truth benchmark and measure precision, recall, false-positive rate, false negatives, latency, memory use and file coverage.
+- Add optional patch suggestions only after diff validation and isolated regression tests; require human approval before applying changes.
 
 ## License
 
-The source code in this project folder is provided under the MIT License unless otherwise stated. This license does not change the separate licenses or terms governing model weights, datasets, or third-party dependencies. StarCoder2 has its own BigCode OpenRAIL-M license.
+Check the repository-level license and each model/dependency's license before reuse. No claim is made that this tool detects all defects or is suitable as a sole security control.
