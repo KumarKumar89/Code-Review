@@ -27,7 +27,7 @@ This repository hosts an early-stage code-review prototype that combines reprodu
 - **Deterministic first-pass review:** reads supported files as text, reports Python syntax errors, and flags selected suspicious patterns.
 - **Evidence-oriented output:** findings include a rule identifier, source path, line, severity, evidence excerpt, and recommendation. Suspected credential values are redacted from the scanner's secret-pattern evidence.
 - **Model catalog:** tracks seven candidate coding, reasoning, and multimodal checkpoints with official model-card links and resource guidance.
-- **Colab notebook:** uploads a ZIP or selected files, runs a lightweight scan, displays findings, and exports JSON.
+- **Colab notebook:** pastes any public repository URL (GitHub/GitLab/Bitbucket, `owner/repo`, or direct `.git`) for a shallow clone, or uploads a ZIP/selected files, runs a lightweight scan, displays findings, and exports JSON. The same URL input is available in the code repo via `scripts/review_repo_url.py` / `--repo-url`.
 - **Tests and CI:** includes tests for the scanner and model registry, plus checks for the registry JSON and notebook structure.
 
 The current scanner is a useful baseline, not a complete static analyzer. It will miss bugs that require deeper program analysis and can flag harmless code that resembles a risky pattern.
